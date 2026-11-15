@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Horn Practice",
+    "slug": "horn-practice",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/images/icon.png",
+    "scheme": "hornpractice",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "app.hornpractice.ios",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Horn Practice uses the microphone to tune your horn and to record practice takes.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "app.hornpractice.android",
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#14170f",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Horn Practice uses the microphone to tune your horn and to record practice takes."
+        }
+      ],
+      "expo-sharing",
+      "expo-screen-orientation"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
