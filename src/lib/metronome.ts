@@ -72,6 +72,17 @@ export function planClicks(options: {
   };
 }
 
+const SUBDIVISION_LABELS: Record<number, [string, string, string, string]> = {
+  4: ['Quarter', 'Eighths', 'Triplets', 'Sixteenths'],
+  8: ['Eighth', 'Sixteenths', 'Triplets', '32nds'],
+};
+
+/** Labels are subdivisions of the beat, so 6/8 does not call a sixteenth an eighth. */
+export function subdivisionChoices(noteValue: number): { value: string; label: string }[] {
+  const labels = SUBDIVISION_LABELS[noteValue] ?? ['Beat', '×2', '×3', '×4'];
+  return labels.map((label, index) => ({ value: String(index + 1), label }));
+}
+
 export const METERS: { label: string; beats: number; noteValue: number; accents: boolean[] }[] = [
   { label: '2/4', beats: 2, noteValue: 4, accents: [true, false] },
   { label: '3/4', beats: 3, noteValue: 4, accents: [true, false, false] },

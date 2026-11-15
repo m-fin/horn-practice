@@ -3,14 +3,17 @@ import {
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
   useAudioPlayer,
+  useAudioPlayerStatus,
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
 import * as Sharing from 'expo-sharing';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { resumeAudio } from '@/audio/loopEngine';
 import { Panel, PrimaryButton, Screen } from '@/components/ui';
 import { useConditionalKeepAwake } from '@/hooks/awake';
+import { takeDownloadName } from '@/lib/audioFile';
 import { formatClock } from '@/lib/streak';
 import { deleteTake, loadTakes, renameTake, saveTake, type Take } from '@/state/takes';
 import { useInstrument } from '@/state/instrument';
@@ -21,6 +24,9 @@ export default function TakesScreen() {
   const [takes, setTakes] = useState<Take[]>([]);
   const [message, setMessage] = useState('Record a take, listen back, then send it for the weekly sonicrift recording.');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const stopping = useRef(false);
+  const instrumentRef = useRef(instrument);
+  instrumentRef.current = instrument;
   const recorder = useAudioRecorder({
     ...RecordingPresets.HIGH_QUALITY,
     isMeteringEnabled: true,
@@ -28,11 +34,40 @@ export default function TakesScreen() {
   });
   const state = useAudioRecorderState(recorder, 200);
   const player = useAudioPlayer();
+  const playback = useAudioPlayerStatus(player);
+  const finished = useRef(false);
   useConditionalKeepAwake(state.isRecording, 'takes');
+
+  useEffect(() => {
+    if (playback.didJustFinish && !finished.current && activeId) setActiveId(null);
+    finished.current = playback.didJustFinish;
+  }, [playback.didJustFinish, activeId]);
 
   useEffect(() => {
     loadTakes().then(setTakes).catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (stopping.current || !recorder.getStatus().isRecording) return;
+      stopping.current = true;
+      const durationMillis = recorder.getStatus().durationMillis;
+      const horn = instrumentRef.current;
+      void (async () => {
+        await recorder.stop();
+        const uri = recorder.uri;
+        if (!uri) return;
+        await saveTake({
+          id: `${Date.now()}`,
+          sourceUri: uri,
+          createdAt: Date.now(),
+          instrument: horn,
+          durationMillis,
+          note: datedNote(Date.now()),
+        });
+      })();
+    };
+  }, [recorder]);
 
   return (
     <Screen>
@@ -46,6 +81,7 @@ export default function TakesScreen() {
             stop().catch(() => setMessage('The take did not save.'));
             return;
           }
+          void resumeAudio();
           begin().catch((error: unknown) => {
             setMessage(error instanceof Error ? error.message : 'Recording is unavailable.');
           });
@@ -94,7 +130,14 @@ export default function TakesScreen() {
             >
               <Text style={styles.actionText}>{activeId === take.id ? 'Stop' : 'Play'}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Send take" onPress={() => share(take)} style={styles.action}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send take"
+              onPress={() => {
+                share(take).catch(() => setMessage('Could not send that take.'));
+              }}
+              style={styles.action}
+            >
               <Text style={styles.actionText}>Send</Text>
             </Pressable>
             <Pressable
@@ -126,31 +169,41 @@ export default function TakesScreen() {
   }
 
   async function stop() {
-    await recorder.stop();
-    const uri = recorder.uri;
-    if (!uri) throw new Error('The recording file is missing.');
-    const durationMillis = recorder.getStatus().durationMillis;
-    const createdAt = Date.now();
-    const stamp = new Date(createdAt);
-    const note = `sonicrift ${stamp.getFullYear()}-${String(stamp.getMonth() + 1).padStart(2, '0')}-${String(stamp.getDate()).padStart(2, '0')}`;
-    const next = await saveTake({
-      id: `${createdAt}`,
-      sourceUri: uri,
-      createdAt,
-      instrument,
-      durationMillis,
-      note,
-    });
-    setTakes(next);
-    setMessage('Take saved. Play it back, then send it.');
+    if (stopping.current) return;
+    stopping.current = true;
+    try {
+      const durationMillis = Math.max(state.durationMillis, recorder.getStatus().durationMillis);
+      await recorder.stop();
+      const uri = recorder.uri;
+      if (!uri) throw new Error('The recording file is missing.');
+      const createdAt = Date.now();
+      const note = datedNote(createdAt);
+      const next = await saveTake({
+        id: `${createdAt}`,
+        sourceUri: uri,
+        createdAt,
+        instrument,
+        durationMillis,
+        note,
+      });
+      setTakes(next);
+      setMessage('Take saved. Play it back, then send it.');
+    } finally {
+      stopping.current = false;
+    }
   }
 
   async function share(take: Take) {
     if (Platform.OS === 'web') {
+      const response = await fetch(take.uri);
+      const blob = await response.blob();
+      const mime = blob.type || 'audio/webm';
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = take.uri;
-      link.download = `${take.note || 'take'}.audio`;
+      link.href = url;
+      link.download = takeDownloadName(take.note, mime);
       link.click();
+      URL.revokeObjectURL(url);
       setMessage('Download started. Attach that file to the sonicrift note.');
       return;
     }
@@ -164,6 +217,11 @@ export default function TakesScreen() {
       mimeType: 'audio/m4a',
     });
   }
+}
+
+function datedNote(createdAt: number): string {
+  const stamp = new Date(createdAt);
+  return `sonicrift ${stamp.getFullYear()}-${String(stamp.getMonth() + 1).padStart(2, '0')}-${String(stamp.getDate()).padStart(2, '0')}`;
 }
 
 const styles = StyleSheet.create({

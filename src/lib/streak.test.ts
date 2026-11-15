@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { computeStreak, previousDay, summarize } from './streak.ts';
+import { computeStreak, practiceCalendar, previousDay, summarize } from './streak.ts';
 
 describe('practice streak', () => {
   it('counts today and yesterday, and keeps yesterday if today is empty', () => {
@@ -20,6 +20,16 @@ describe('practice streak', () => {
 
   it('steps back one calendar day across a month boundary', () => {
     assert.equal(previousDay('2026-03-01'), '2026-02-28');
+  });
+
+  it('lines the practice grid up on Sundays and leaves the rest of this week empty', () => {
+    const cells = practiceCalendar('2026-11-15', 2);
+    assert.equal(cells.length, 14);
+    assert.equal(cells[0]?.day, '2026-11-08');
+    assert.equal(cells[7]?.day, '2026-11-15');
+    assert.equal(cells[7]?.future, false);
+    assert.equal(cells[8]?.future, true);
+    assert.equal(cells[13]?.day, '2026-11-21');
   });
 
   it('sums today and the trailing week', () => {

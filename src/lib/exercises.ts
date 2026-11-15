@@ -53,6 +53,77 @@ export function spellMidi(midi: number, prefer: 'sharp' | 'flat'): SpelledNote {
   return { letter: chosen[0], accidental: chosen[1], octave };
 }
 
+const SHARP_SIGNATURE: { letter: Letter; accidental: 1 }[] = [
+  { letter: 'F', accidental: 1 },
+  { letter: 'C', accidental: 1 },
+  { letter: 'G', accidental: 1 },
+  { letter: 'D', accidental: 1 },
+  { letter: 'A', accidental: 1 },
+  { letter: 'E', accidental: 1 },
+  { letter: 'B', accidental: 1 },
+];
+
+const FLAT_SIGNATURE: { letter: Letter; accidental: -1 }[] = [
+  { letter: 'B', accidental: -1 },
+  { letter: 'E', accidental: -1 },
+  { letter: 'A', accidental: -1 },
+  { letter: 'D', accidental: -1 },
+  { letter: 'G', accidental: -1 },
+  { letter: 'C', accidental: -1 },
+  { letter: 'F', accidental: -1 },
+];
+
+const SHARP_STEPS = [8, 5, 9, 6, 3, 7, 4];
+const FLAT_STEPS = [4, 7, 3, 6, 2, 5, 1];
+
+const KEY_ACCIDENTALS: Record<KeyName, number> = {
+  C: 0,
+  G: 1,
+  D: 2,
+  F: -1,
+  Bb: -2,
+  Eb: -3,
+  Ab: -4,
+};
+
+export type SignatureMark = { letter: Letter; accidental: -1 | 1; step: number };
+
+/** Treble-clef key signature, in the order a player expects to see it. */
+export function keySignature(key: KeyName): SignatureMark[] {
+  const count = KEY_ACCIDENTALS[key];
+  if (count > 0) {
+    return SHARP_SIGNATURE.slice(0, count).map((mark, index) => ({
+      ...mark,
+      step: SHARP_STEPS[index] ?? 8,
+    }));
+  }
+  if (count < 0) {
+    return FLAT_SIGNATURE.slice(0, -count).map((mark, index) => ({
+      ...mark,
+      step: FLAT_STEPS[index] ?? 4,
+    }));
+  }
+  return [];
+}
+
+/**
+ * Accidental to print, given what the key signature and earlier notes in the
+ * measure already told the player. Updates `measure` as a side effect.
+ */
+export function accidentalGlyph(
+  note: SpelledNote,
+  signature: { letter: Letter; accidental: -1 | 1 }[],
+  measure: Map<Letter, -1 | 0 | 1>,
+): '' | '♯' | '♭' | '♮' {
+  const signed = signature.find((item) => item.letter === note.letter)?.accidental ?? 0;
+  const inForce = measure.get(note.letter) ?? signed;
+  measure.set(note.letter, note.accidental);
+  if (note.accidental === inForce) return '';
+  if (note.accidental === 1) return '♯';
+  if (note.accidental === -1) return '♭';
+  return '♮';
+}
+
 export function majorScale(key: KeyName): SpelledNote[] {
   const tonic = TONIC[key];
   const start = spelledToMidi(tonic);

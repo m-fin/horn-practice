@@ -3,14 +3,12 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { playWavLoop, resumeAudio, type LoopHandle } from '@/audio/loopEngine';
-import { ChoiceRow, Panel, PrimaryButton, Screen } from '@/components/ui';
+import { ChoiceRow, InstrumentSwitch, Panel, PrimaryButton, Screen } from '@/components/ui';
 import { useConditionalKeepAwake } from '@/hooks/awake';
-import { formatPitch, nameMidi, writtenFrequency, type InstrumentId } from '@/lib/pitch';
+import { DRONE_NOTES, formatPitch, nameMidi, writtenFrequency, type InstrumentId } from '@/lib/pitch';
 import { renderDroneWav } from '@/lib/wav';
 import { useInstrument } from '@/state/instrument';
 import { colors, serif } from '@/theme';
-
-const NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 
 export default function DroneScreen() {
   const { instrument } = useInstrument();
@@ -27,7 +25,7 @@ export default function DroneScreen() {
   useConditionalKeepAwake(playing, 'drone');
 
   useEffect(() => {
-    if (params.note && NOTES.includes(params.note)) setNote(params.note);
+    if (params.note && (DRONE_NOTES as readonly string[]).includes(params.note)) setNote(params.note);
     const nextOctave = Number(params.octave);
     if (Number.isFinite(nextOctave)) setOctave(Math.min(6, Math.max(3, Math.round(nextOctave))));
   }, [params.note, params.octave]);
@@ -62,8 +60,9 @@ export default function DroneScreen() {
     <Screen>
       <Text style={styles.lead}>
         A written {note}
-        {octave} for the selected horn. The speaker sounds the concert pitch, so you can match it.
+        {octave} for the selected horn. The speaker sounds the concert pitch, so you can match it. Use headphones if the tuner is open.
       </Text>
+      <InstrumentSwitch />
       <Text style={styles.pitch}>
         {note}
         {octave}
@@ -74,7 +73,7 @@ export default function DroneScreen() {
       <ChoiceRow
         value={note}
         onChange={setNote}
-        options={NOTES.map((name) => ({ value: name, label: name }))}
+        options={DRONE_NOTES.map((name) => ({ value: name, label: name }))}
       />
       <View style={styles.row}>
         <Pressable accessibilityRole="button" accessibilityLabel="Octave down" onPress={() => setOctave((value) => Math.max(3, value - 1))} style={styles.step}>
@@ -111,7 +110,14 @@ export default function DroneScreen() {
           thumbTintColor={colors.frog}
         />
       </Panel>
-      <PrimaryButton label={playing ? 'Stop drone' : 'Play drone'} tone={playing ? 'danger' : 'frog'} onPress={() => setPlaying((value) => !value)} />
+      <PrimaryButton
+        label={playing ? 'Stop drone' : 'Play drone'}
+        tone={playing ? 'danger' : 'frog'}
+        onPress={() => {
+          void resumeAudio();
+          setPlaying((value) => !value);
+        }}
+      />
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </Screen>
   );

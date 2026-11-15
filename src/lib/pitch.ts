@@ -8,6 +8,9 @@ export const INSTRUMENTS: Record<
   'eb-alto': { label: 'Eb alto sax', short: 'Alto sax', writtenSemitones: 9 },
 };
 
+/** Spelling the drone buttons use. Exercise tonics have to match this list. */
+export const DRONE_NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
+
 const SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
 const FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
 

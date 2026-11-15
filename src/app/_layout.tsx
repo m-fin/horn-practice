@@ -1,13 +1,23 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useSyncExternalStore } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useConditionalKeepAwake } from '@/hooks/awake';
 import { InstrumentProvider } from '@/state/instrument';
+import { getPracticeTimer, subscribePracticeTimer } from '@/state/practiceTimer';
 import { colors } from '@/theme';
+
+function AwakeWhileTiming() {
+  const { running } = useSyncExternalStore(subscribePracticeTimer, getPracticeTimer, getPracticeTimer);
+  useConditionalKeepAwake(running, 'practice-timer');
+  return null;
+}
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <InstrumentProvider>
+        <AwakeWhileTiming />
         <StatusBar style="light" />
         <Stack
           screenOptions={{

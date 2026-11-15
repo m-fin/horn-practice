@@ -1,7 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
+import { createQueue } from '@/lib/queue';
 import type { InstrumentId } from '@/lib/pitch';
+
+const enqueue = createQueue();
 
 const STORAGE_KEY = 'horn-practice.takes.v1';
 
@@ -29,7 +32,11 @@ async function persist(takes: Take[]) {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(takes));
 }
 
-export async function saveTake(input: Omit<Take, 'uri'> & { sourceUri: string }): Promise<Take[]> {
+export function saveTake(input: Omit<Take, 'uri'> & { sourceUri: string }): Promise<Take[]> {
+  return enqueue(() => writeTake(input));
+}
+
+async function writeTake(input: Omit<Take, 'uri'> & { sourceUri: string }): Promise<Take[]> {
   let uri = input.sourceUri;
   if (Platform.OS !== 'web' && uri) {
     const directory = new Directory(Paths.document, 'takes');
@@ -55,24 +62,31 @@ export async function saveTake(input: Omit<Take, 'uri'> & { sourceUri: string })
   return next;
 }
 
-export async function deleteTake(id: string): Promise<Take[]> {
-  const existing = await loadTakes();
-  const target = existing.find((take) => take.id === id);
-  if (target && Platform.OS !== 'web') {
-    try {
-      const file = new File(target.uri);
-      if (file.exists) file.delete();
-    } catch {
-      // The list update still removes the row.
+export function deleteTake(id: string): Promise<Take[]> {
+  return enqueue(async () => {
+    const existing = await loadTakes();
+    const target = existing.find((take) => take.id === id);
+    if (target && Platform.OS === 'web' && target.uri.startsWith('blob:')) {
+      URL.revokeObjectURL(target.uri);
     }
-  }
-  const next = existing.filter((take) => take.id !== id);
-  await persist(next);
-  return next;
+    if (target && Platform.OS !== 'web') {
+      try {
+        const file = new File(target.uri);
+        if (file.exists) file.delete();
+      } catch {
+        // The list update still removes the row.
+      }
+    }
+    const next = existing.filter((take) => take.id !== id);
+    await persist(next);
+    return next;
+  });
 }
 
-export async function renameTake(id: string, note: string): Promise<Take[]> {
-  const next = (await loadTakes()).map((take) => (take.id === id ? { ...take, note } : take));
-  await persist(next);
-  return next;
+export function renameTake(id: string, note: string): Promise<Take[]> {
+  return enqueue(async () => {
+    const next = (await loadTakes()).map((take) => (take.id === id ? { ...take, note } : take));
+    await persist(next);
+    return next;
+  });
 }

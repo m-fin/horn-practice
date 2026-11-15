@@ -2,14 +2,16 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Card, InstrumentSwitch, Screen } from '@/components/ui';
-import { formatMinutes, summarize } from '@/lib/streak';
+import { formatClock, formatMinutes, summarize } from '@/lib/streak';
 import { loadSessions } from '@/state/log';
+import { usePracticeTimer } from '@/state/practiceTimer';
 import { colors, serif } from '@/theme';
 
 export default function HomeScreen() {
   const [today, setToday] = useState('0 min');
   const [week, setWeek] = useState('0 min');
   const [streak, setStreak] = useState(0);
+  const timer = usePracticeTimer();
 
   useFocusEffect(
     useCallback(() => {
@@ -50,7 +52,15 @@ export default function HomeScreen() {
       <Card href="/tuner" title="Tuner" body="Microphone pitch, written for Bb trumpet or Eb alto." />
       <Card href="/drone" title="Drone" body="A sustained tone on the written note, with an optional fifth." />
       <Card href="/exercises" title="Exercises" body="Scales and long tones generated for this app. Nothing copied." />
-      <Card href="/timer" title="Timer and streak" body="Keep the minutes, and the days you showed up." />
+      <Card
+        href="/timer"
+        title="Timer and streak"
+        body={
+          timer.elapsedMs > 0
+            ? `${timer.running ? 'Running' : 'Paused'} · ${formatClock(timer.elapsedMs)}. It keeps going if you leave this screen.`
+            : 'Keep the minutes, and the days you showed up.'
+        }
+      />
       <Card href="/takes" title="Record a take" body="Play it back, then send it for the weekly sonicrift recording." />
     </Screen>
   );

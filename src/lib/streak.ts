@@ -10,11 +10,38 @@ export function localDayKey(timestamp: number): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-export function previousDay(iso: string): string {
+function shiftDay(iso: string, delta: number): string {
   const [year, month, day] = iso.split('-').map(Number);
   const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
-  date.setUTCDate(date.getUTCDate() - 1);
+  date.setUTCDate(date.getUTCDate() + delta);
   return date.toISOString().slice(0, 10);
+}
+
+export function previousDay(iso: string): string {
+  return shiftDay(iso, -1);
+}
+
+export function nextDay(iso: string): string {
+  return shiftDay(iso, 1);
+}
+
+export type CalendarCell = { day: string; future: boolean };
+
+/** Sunday-start weeks, through the Saturday of the week that contains `today`. */
+export function practiceCalendar(today: string, weeks = 12): CalendarCell[] {
+  const [year, month, day] = today.split('-').map(Number);
+  const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
+  const daysAfterToday = 6 - date.getUTCDay();
+  const total = Math.max(1, weeks) * 7;
+  const todayIndex = total - 1 - daysAfterToday;
+  let cursor = today;
+  for (let index = 0; index < todayIndex; index++) cursor = previousDay(cursor);
+  const cells: CalendarCell[] = [];
+  for (let index = 0; index < total; index++) {
+    cells.push({ day: cursor, future: index > todayIndex });
+    cursor = nextDay(cursor);
+  }
+  return cells;
 }
 
 export function computeStreak(days: string[], today: string): {

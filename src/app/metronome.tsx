@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { playWavLoop, resumeAudio, type LoopHandle } from '@/audio/loopEngine';
 import { ChoiceRow, Panel, PrimaryButton, Screen } from '@/components/ui';
 import { useConditionalKeepAwake } from '@/hooks/awake';
-import { METERS, clampBpm, planClicks, tempoFromTaps } from '@/lib/metronome';
+import { METERS, clampBpm, planClicks, subdivisionChoices, tempoFromTaps } from '@/lib/metronome';
 import { renderClickWav } from '@/lib/wav';
 import { colors, serif } from '@/theme';
 
@@ -135,7 +135,9 @@ export default function MetronomeScreen() {
             <Text style={styles.nudgeText}>+1</Text>
           </Pressable>
         </View>
-        <Text style={styles.hint}>The click is a rendered loop, so it does not drift. Tempo is the beat of the time signature: a quarter in 4/4, an eighth in 6/8.</Text>
+        <Text style={styles.hint}>
+          The click is one rendered loop, so it does not drift. Tempo is the beat of the meter: a quarter in 4/4, an eighth in 6/8. The row under the meter splits that beat.
+        </Text>
       </Panel>
       <ChoiceRow
         value={meter}
@@ -151,21 +153,20 @@ export default function MetronomeScreen() {
       <ChoiceRow
         value={String(subdivision)}
         onChange={(value) => setSubdivision(Number(value))}
-        options={[
-          { value: '1', label: 'Beat' },
-          { value: '2', label: 'Eighths' },
-          { value: '3', label: 'Triplets' },
-          { value: '4', label: 'Sixteenths' },
-        ]}
+        options={subdivisionChoices(selected.noteValue)}
       />
       <PrimaryButton
         label={running ? 'Stop' : 'Start'}
         tone={running ? 'danger' : 'brass'}
         onPress={() => {
+          void resumeAudio();
           if (!running) {
             const next = clampBpm(liveBpm);
             setBpm(next);
             setLiveBpm(next);
+          } else {
+            setBeat(0);
+            setPhase(0);
           }
           setRunning((value) => !value);
         }}

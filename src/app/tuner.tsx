@@ -2,7 +2,7 @@ import { requestRecordingPermissionsAsync, setAudioModeAsync, useAudioStream, ty
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { resumeAudio, sharedAudioContext } from '@/audio/loopEngine';
-import { ChoiceRow, Panel, PrimaryButton, Screen } from '@/components/ui';
+import { ChoiceRow, InstrumentSwitch, Panel, PrimaryButton, Screen } from '@/components/ui';
 import { useConditionalKeepAwake } from '@/hooks/awake';
 import { analyzePitch, formatCents, formatPitch, type PitchReading } from '@/lib/pitch';
 import { detectPitchYin, rms } from '@/lib/yin';
@@ -81,6 +81,7 @@ export default function TunerScreen() {
   return (
     <Screen>
       <Text style={styles.help}>{message}</Text>
+      <InstrumentSwitch />
       <View style={styles.noteWrap}>
         <Text style={[styles.note, { color: tone }]}>{reading ? reading.written.name : '–'}</Text>
         <Text style={styles.octave}>{reading ? reading.written.octave : ''}</Text>

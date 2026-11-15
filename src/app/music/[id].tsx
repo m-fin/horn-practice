@@ -2,13 +2,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
-  type GestureResponderEvent,
+  type PointerEvent as RNPointerEvent,
   type ScrollViewInstance,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -20,8 +21,9 @@ import { colors, serif } from '@/theme';
 type HandsFreeMode = 'scroll' | 'pages';
 
 export default function MusicViewer() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const piece = findPiece(String(id ?? ''));
+  const params = useLocalSearchParams<{ id: string | string[] }>();
+  const pieceId = Array.isArray(params.id) ? (params.id[0] ?? '') : String(params.id ?? '');
+  const piece = findPiece(pieceId);
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -31,7 +33,24 @@ export default function MusicViewer() {
   const [mode, setMode] = useState<HandsFreeMode>('scroll');
   const [speed, setSpeed] = useState(56);
   const [seconds, setSeconds] = useState(12);
+  const [routeId, setRouteId] = useState(pieceId);
+  if (routeId !== pieceId) {
+    setRouteId(pieceId);
+    setIndex(0);
+    setHandsFree(false);
+    setChrome(true);
+  }
   useConditionalKeepAwake(true, 'music-stand');
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const root = document.documentElement;
+    const previous = root.style.overscrollBehaviorX;
+    root.style.overscrollBehaviorX = 'none';
+    return () => {
+      root.style.overscrollBehaviorX = previous;
+    };
+  }, []);
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => undefined);
@@ -48,11 +67,11 @@ export default function MusicViewer() {
 
   useEffect(() => {
     if (!piece || !handsFree || mode !== 'pages') return;
-    const timer = setInterval(() => {
-      setIndex((current) => Math.min(piece.pages.length - 1, current + 1));
+    const timer = setTimeout(() => {
+      setIndex((current) => (current + 1) % piece.pages.length);
     }, seconds * 1000);
-    return () => clearInterval(timer);
-  }, [handsFree, mode, seconds, piece]);
+    return () => clearTimeout(timer);
+  }, [handsFree, mode, seconds, piece, index]);
 
   if (!piece) {
     return (
@@ -72,6 +91,7 @@ export default function MusicViewer() {
     <View style={styles.stage}>
       {handsFree && mode === 'scroll' ? (
         <AutoScroll
+          key={piece.id}
           pages={piece.pages}
           width={width}
           height={height}
@@ -81,6 +101,7 @@ export default function MusicViewer() {
         />
       ) : (
         <PageTurn
+          key={piece.id}
           pages={piece.pages}
           index={index}
           width={width}
@@ -152,10 +173,10 @@ function PageTurn({
   onCenter: () => void;
 }) {
   const start = useRef({ x: 0, y: 0 });
-  const grant = (event: GestureResponderEvent) => {
+  const down = (event: RNPointerEvent) => {
     start.current = { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY };
   };
-  const release = (event: GestureResponderEvent) => {
+  const up = (event: RNPointerEvent) => {
     const dx = event.nativeEvent.pageX - start.current.x;
     const dy = event.nativeEvent.pageY - start.current.y;
     if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) {
@@ -163,7 +184,7 @@ function PageTurn({
       return;
     }
     if (Math.abs(dx) < 16 && Math.abs(dy) < 16) {
-      const x = event.nativeEvent.locationX;
+      const x = event.nativeEvent.offsetX;
       if (x < width * 0.28) onTurn(-1);
       else if (x > width * 0.72) onTurn(1);
       else onCenter();
@@ -172,10 +193,10 @@ function PageTurn({
   const neighbors = [index - 1, index, index + 1].filter((page) => page >= 0 && page < pages.length);
   return (
     <View
-      style={{ width, height }}
-      onStartShouldSetResponder={() => true}
-      onResponderGrant={grant}
-      onResponderRelease={release}
+      pointerEvents="box-only"
+      style={[styles.turn, { width, height }]}
+      onPointerDown={down}
+      onPointerUp={up}
     >
       {neighbors.map((page) => (
         <Image
@@ -256,7 +277,7 @@ function AutoScroll({
         paused.current = false;
       }}
       onScroll={(event) => {
-        y.current = event.nativeEvent.contentOffset.y;
+        if (paused.current) y.current = event.nativeEvent.contentOffset.y;
       }}
     >
       <View style={{ height: pages.length * height }}>
@@ -308,6 +329,7 @@ function SpeedControl({
 
 const styles = StyleSheet.create({
   stage: { flex: 1, backgroundColor: '#070806' },
+  turn: { cursor: 'pointer', touchAction: 'none' },
   empty: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
   title: { color: colors.ink, fontFamily: serif, fontSize: 28 },
   link: { color: colors.brass, fontSize: 16 },

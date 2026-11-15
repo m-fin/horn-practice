@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Screen } from '@/components/ui';
+import { InstrumentSwitch, Screen } from '@/components/ui';
 import { pieces, type SheetPiece } from '@/data/sheets';
 import { useInstrument } from '@/state/instrument';
 import { colors, serif } from '@/theme';
@@ -13,11 +13,12 @@ export default function MusicLibrary() {
   return (
     <Screen>
       <Text style={styles.intro}>
-        Original Eb alto parts, laid out for a phone on a stand. Written pitch. These are Frog&apos;s charts, not anyone else&apos;s tunes.
+        Original Eb alto parts in treble clef, laid out for a phone on a stand. Written pitch. These are Frog&apos;s charts, marked CC0 on the page, not anyone else&apos;s tunes.
       </Text>
+      <InstrumentSwitch />
       {instrument === 'bb-trumpet' ? (
         <Text style={styles.note}>
-          Trumpet is selected. The stand stays in alto clef-reading — Eb written pitch. Use the tuner, drone, and exercises for Bb trumpet.
+          Trumpet is selected. The pages stay in Eb alto written pitch, treble clef. Fingerings will not match. Use the tuner, drone, and exercises for Bb trumpet, or switch back to alto to read the stand.
         </Text>
       ) : null}
       {pieces.map((piece) => (

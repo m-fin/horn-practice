@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { clampBpm, planClicks, tempoFromTaps } from './metronome.ts';
+import { clampBpm, planClicks, subdivisionChoices, tempoFromTaps } from './metronome.ts';
 import { renderClickWav, renderDroneWav } from './wav.ts';
 
 describe('metronome plan', () => {
@@ -31,6 +31,17 @@ describe('metronome plan', () => {
     assert.deepEqual(
       plan.clicks.map((click) => click.accent),
       [true, false, false, false, true, false, false, false],
+    );
+  });
+
+  it('names subdivisions from the beat of the meter', () => {
+    assert.deepEqual(
+      subdivisionChoices(4).map((choice) => choice.label),
+      ['Quarter', 'Eighths', 'Triplets', 'Sixteenths'],
+    );
+    assert.deepEqual(
+      subdivisionChoices(8).map((choice) => choice.label),
+      ['Eighth', 'Sixteenths', 'Triplets', '32nds'],
     );
   });
 

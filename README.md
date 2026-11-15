@@ -1,37 +1,63 @@
 # Horn Practice
 
-Private iPhone practice desk for Frog Finley. Alto sax and trumpet.
+Practice desk for Frog Finley (Matthew Finley): Eb alto sax and Bb trumpet.
 
-The music stand bundles his original landscape charts (Eb alto, written pitch). The exercises are generic scales and long tones generated in the app. There are no copyrighted songs and no transcriptions.
+Version 1 is a phone-shaped Expo app you can use today in a browser or in Expo Go. Neither needs a paid Apple Developer account. A signed iPhone build for TestFlight waits on the Apple Developer Program enrollment, planned for 1 December 2026. The steps for that build are in [TESTFLIGHT.md](TESTFLIGHT.md).
 
 ## What it does
 
-- Landscape music viewer with tap and swipe page turns, plus hands-free scroll or timed page turns. The screen stays awake on the stand.
-- Metronome from 30 to 300, tap tempo, time signatures, per-beat accents, subdivisions, and a visual pulse. Clicks are a seamless rendered loop so the tempo does not drift.
-- Microphone tuner in written pitch for Bb trumpet and Eb alto, with concert pitch shown alongside.
-- Drone on the written note (band Bb and concert A presets, optional fifth).
-- Practice timer, manual minute log, and a day streak.
-- Record a take, play it back, and share the file for the weekly sonicrift recording.
+- **Music stand.** Landscape pages of Frog's original charts. Tap the edges or swipe to turn, or turn on hands-free scroll or timed page turns. The screen stays awake.
+- **Metronome.** 30–300, tap tempo, meters from 2/4 through 12/8, accents, and subdivisions of the beat. The click is one rendered loop, so it does not drift.
+- **Tuner.** Microphone pitch in written pitch for Bb trumpet or Eb alto, with concert pitch and cents beside it. Reference A4 can be 438, 440, 442, or 444.
+- **Drone.** A sustained written note (band Bb and concert A presets, optional fifth). The speaker plays the concert pitch.
+- **Exercises.** Generic scales and long tones drawn on a treble staff. Nothing copied from a method book.
+- **Timer and streak.** A clock that keeps running when you leave the screen, a 12-week calendar, and a manual minute log.
+- **Takes.** Record a practice take, play it back, and download or share the file for the weekly sonicrift recording.
 
-Bundle id: `app.hornpractice.ios`. TestFlight steps, including the pending Apple Developer Individual enrollment, are in `TESTFLIGHT.md`.
+The horn switch is on the home desk and on every screen that changes with the instrument. Charts on the stand stay in treble clef at Eb alto written pitch. Trumpet players should use the tuner, drone, and exercises for fingerings, not the alto pages.
 
-## Develop
+## Original music
 
-Requires Node 22 and the Expo SDK 58 CLI.
+The PDFs and page images in `assets/` are original pieces. Each part is marked **CC0 1.0** on the page, and that dedication is unchanged by the license on the code. Exercises are generated in the app. Do not add copyrighted songs or transcriptions of other people's music.
+
+## Run it
+
+Node 22.
 
 ```bash
 npm install
 npm test
 npm run typecheck
+npm run web
+```
+
+Expo prints a localhost URL. Open it. Start the metronome or the drone from a click or a tap — browsers will not start audio until you do. The tuner and the takes recorder ask for the microphone. Use headphones with the drone so a tuner in the same room is not hearing the speaker.
+
+On a phone, the same UI opens in Expo Go:
+
+```bash
 npx expo start
 ```
 
-`npm run web` opens the same UI in a browser. Microphone features need a browser that can prompt for the mic. The iOS binary is an EAS production build, not Expo Go, because it uses the audio and orientation native modules.
+Scan the QR code with the iPhone camera (or the Expo Go app on Android). Expo Go is free. You do not need an Apple Developer membership for this.
+
+`npm run export:web` writes a static web bundle to `dist/`.
+
+## Check
 
 ```bash
-npx expo export
+npm test
+npm run typecheck
 ```
 
-## Privacy
+`npm test` covers pitch transposition, the YIN detector, click placement, drone loop length, streaks, the practice calendar, scale spelling, and key-signature accidentals.
 
-This repository stays private. The sheet music is Frog’s own work (the parts are marked CC0 on the page). Do not add other people’s tunes.
+## iOS binary
+
+Shipping to TestFlight needs the paid Apple Developer Program. Until that enrollment is active, practice in the browser or in Expo Go. Do not expect `eas build` to upload. Placeholders in `eas.json` (`appleTeamId`, `ascAppId`) are documented in `TESTFLIGHT.md`.
+
+Bundle id, when the account exists: `app.hornpractice.ios`.
+
+## License
+
+The app code is [MIT](LICENSE), copyright 2026 Matthew Finley. The charts stay CC0, as printed on the parts.

@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createQueue } from '@/lib/queue';
 import type { InstrumentId } from '@/lib/pitch';
+
+const enqueue = createQueue();
 
 const STORAGE_KEY = 'horn-practice.sessions.v1';
 
@@ -23,9 +26,11 @@ export async function loadSessions(): Promise<PracticeSession[]> {
   }
 }
 
-export async function addSession(session: PracticeSession): Promise<PracticeSession[]> {
-  const existing = await loadSessions();
-  const next = [session, ...existing].slice(0, 400);
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  return next;
+export function addSession(session: PracticeSession): Promise<PracticeSession[]> {
+  return enqueue(async () => {
+    const existing = await loadSessions();
+    const next = [session, ...existing].slice(0, 400);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    return next;
+  });
 }

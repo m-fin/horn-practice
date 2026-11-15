@@ -1,6 +1,8 @@
 # TestFlight
 
-Horn Practice is ready to build for iPhone. Shipping it to TestFlight is waiting on the Apple Developer Program enrollment for an **Individual** account. Until that enrollment is active, do not run a store build expecting it to upload.
+Horn Practice already runs without a paid Apple account: `npm run web` in a browser, or `npx expo start` in Expo Go. A signed iPhone build is the later step.
+
+Shipping to TestFlight waits on the Apple Developer Program enrollment for an **Individual** account. That enrollment is planned for **1 December 2026**. Until it is active, do not run a store build expecting it to upload.
 
 Bundle identifier: `app.hornpractice.ios`
 
@@ -8,9 +10,9 @@ The production profile in `eas.json` is `production`: store distribution, remote
 
 ## While the Individual account is pending
 
-- Keep this repository private.
+- Practice with `npm run web` or Expo Go. Both use the same screens and need no paid membership.
 - Do not create the App Store Connect record yet. The bundle id cannot be registered until the account exists.
-- A development or preview build also needs an Apple team, so those profiles wait on the same enrollment.
+- A development, preview, or store build that signs for a device also needs an Apple team, so those profiles wait on the same enrollment.
 - The app does not use non-exempt encryption (`ITSAppUsesNonExemptEncryption` is false).
 
 ## After the Individual enrollment is approved
@@ -33,7 +35,7 @@ The production profile in `eas.json` is `production`: store distribution, remote
 
 ## What the binary contains
 
-- Frog’s original alto sax PDFs and the page images rendered from them.
+- Frog’s original alto sax PDFs and the page images rendered from them. The parts are marked CC0 on the page.
 - Generic scales and long tones generated in the app.
 - No copyrighted songs and no transcriptions of other people’s music.
 
